@@ -1,0 +1,60 @@
+menu "Frisbee launcher"
+
+    config FLYWHEEL_MAX_DUTY_PCT
+        int "Flywheel max duty (%)"
+        range 10 100
+        default 75
+        help
+            Duty cycle the flywheel ramps up to when firing. Can also be
+            changed at runtime with the UART set-max-duty command.
+
+    config FLYWHEEL_RAMP_MS
+        int "Flywheel ramp time (ms)"
+        range 100 10000
+        default 2000
+        help
+            Time to ramp from stopped to max duty (and back down).
+
+    config FIRE_SPINUP_MS
+        int "Spin-up wait before feeding (ms)"
+        range 0 10000
+        default 2000
+
+    config FEEDER_REST_US
+        int "Feeder rest pulse (us)"
+        range 500 2500
+        default 500
+
+    config FEEDER_PUSH_US
+        int "Feeder push pulse (us)"
+        range 500 2500
+        default 1000
+
+    config FEEDER_TRAVEL_MS
+        int "Feeder travel time (ms)"
+        range 100 5000
+        default 1200
+        help
+            How long the feeder takes to sweep between rest and push.
+
+    config FEEDER_HOLD_MS
+        int "Feeder hold at push position (ms)"
+        range 0 5000
+        default 500
+
+    config AIM_FAST_OFFSET_US
+        int "Aim servo fast speed (pulse offset from 1500 us)"
+        range 0 500
+        default 167
+
+    config AIM_SLOW_OFFSET_US
+        int "Aim servo slow speed (pulse offset from 1500 us)"
+        range 0 500
+        default 28
+
+    config AIM_TIMEOUT_MS
+        int "Stop aiming if no command for this long (ms)"
+        range 100 10000
+        default 1000
+
+endmenu

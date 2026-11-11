@@ -1,32 +1,64 @@
-# _Sample project_
+# Vision-Guided Frisbee Launcher
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
-
-This is the simplest buildable example. The example is used by command `idf.py create-project`
-that copies the project to user specified path and set it's name. For more information follow the [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project)
-
-
-
-## How to use example
-We encourage the users to use the example as a template for the new projects.
-A recommended way is to follow the instructions on a [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project).
-
-## Example folder contents
-
-The project **sample_project** contains one source file in C language [main.c](main/main.c). The file is located in folder [main](main).
-
-ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt`
-files that provide set of directives and instructions describing the project's source files and targets
-(executable, library, or both). 
-
-Below is short explanation of remaining files in the project folder.
+Hackathon project. A laptop runs YOLO11 on a webcam feed, finds the closest person, and steers the launcher toward them over UART. Holding up an open palm fires. The launcher is an ESP32 driving a flywheel and two servos, built from cardboard and 3D-printed parts.
 
 ```
-├── CMakeLists.txt
-├── main
-│   ├── CMakeLists.txt
-│   └── main.c
-└── README.md                  This is the file you are currently reading
+firmware/   ESP32 firmware (C, ESP-IDF, FreeRTOS)
+vision/     Tracking and gesture detection (Python, OpenCV, YOLO11, MediaPipe)
+legacy/     Arduino sketch used to bench-test the aim servo early on
 ```
-Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system. 
-They are not used or needed when building with CMake and idf.py.
+
+## Firmware
+
+Five FreeRTOS tasks:
+
+| Task | Job |
+|---|---|
+| `aim` | Reads UART commands, drives the continuous-rotation aim servo (MCPWM, 50 Hz) |
+| `feeder` | Runs a shot: spin up flywheel, push disc in, retract, spin down (LEDC, 50 Hz) |
+| `flywheel` | Ramps the motor PWM toward its target (LEDC, 20 kHz, 10-bit, through an L298N) |
+| `button` | Debounced fire button (GPIO interrupt) |
+| `status_led` | Heartbeat LED |
+
+Flywheel max duty, ramp time, feeder positions and aim speeds are set under `idf.py menuconfig` > Frisbee launcher. Max duty can also be changed at runtime over UART.
+
+| Pin | Use |
+|---|---|
+| 13 | Aim servo |
+| 25 | Feeder servo |
+| 21 / 19 / 18 | L298N IN1 (PWM) / IN2 / ENA |
+| 4 | Fire button (to GND) |
+| 15 | Fire LED |
+| 2 | Status LED |
+
+Build and flash (ESP-IDF 5.x):
+
+```
+cd firmware
+idf.py build flash monitor
+```
+
+## Vision
+
+```
+cd vision
+pip install -r requirements.txt
+curl -LO https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task
+python tracker.py --port COM3
+```
+
+The YOLO weights download on first run. Leave off `--port` to try it without the hardware. `serial_test.py` runs the turret through each command without the camera.
+
+## UART protocol
+
+9600 8N1 over the ESP32's USB port. One byte per command:
+
+| Byte | Command |
+|---|---|
+| `0x01` | Fire |
+| `0x02 N` | Set flywheel max duty to N% |
+| `0xFF` / `0x30` | Turn right, fast / slow |
+| `0x77` / `0x20` | Turn left, fast / slow |
+| `0x69` | Stop |
+
+The tracker sends an aim command every frame. If they stop for more than a second the ESP32 stops the turret.

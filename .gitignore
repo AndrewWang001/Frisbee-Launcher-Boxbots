@@ -1,15 +1,27 @@
+# ESP-IDF
 build/
 managed_components/
-.cache/
 sdkconfig
 sdkconfig.old
-sdkconfig.*.bak
-.vscode/
-.idea/
 compile_commands.json
-.ccls-cache/
-.clangd-cache/
+
+# Python
 __pycache__/
 *.pyc
+venv/
+.venv/
+.python-version
+
+# Model weights (downloaded at setup)
+*.pt
+*.task
+
+# Editors / OS
+.vscode/
+.idea/
+.cache/
+.clangd-cache/
+.ccls-cache/
 .DS_Store
 Thumbs.db
+*Zone.Identifier
